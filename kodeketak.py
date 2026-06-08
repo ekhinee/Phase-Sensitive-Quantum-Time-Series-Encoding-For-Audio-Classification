@@ -198,7 +198,136 @@ def qtse_trainable(data_a,w,b):
 
     return qc
 
+def ry_rz_1(data_t,data_p):
+    n_qubits = 5
+    qc = QuantumCircuit(n_qubits)
+    
+    t_qubits =[1, 2, 3, 4]
 
+    for qubit in t_qubits:
+        qc.h(qubit)
+
+    qc.h(0)
+
+    for t_value, (timbre, phase) in enumerate(zip(data_t, data_p)):
+
+        t_bits = np.binary_repr(t_value, width=4)
+
+        # seleccionar instante temporal
+        for i, bit in enumerate(t_bits):
+            if bit == "0":
+                qc.x(t_qubits[i])
+
+        theta_t = timbre * np.pi
+        theta_p = phase * np.pi
+
+        #qc.mcrz(theta_p, t_qubits, 0)
+        qc.mcry(theta_t, t_qubits, 0, None)
+        qc.mcrz(theta_p, t_qubits, 0)
+        
+
+        # deshacer selección
+        for i, bit in enumerate(t_bits):
+            if bit == "0":
+                qc.x(t_qubits[i])
+    qc.h(0)
+
+    return qc
+
+
+def ry_rz_1_trainable(data_t,data_p,w, b): 
+
+    # 4 parametro entrenagarri timbre balioen w eta b, eta fase balioen w eta b
+
+
+    n_qubits = 5
+    qc = QuantumCircuit(n_qubits)
+
+    w_t = w[0]
+    w_p = w[1]
+
+    b_t = b[0]
+    b_p = b[1]
+    
+    t_qubits =[1, 2, 3, 4]
+
+    for qubit in t_qubits:
+        qc.h(qubit)
+
+    qc.h(0)
+
+    for t_value, (timbre, phase) in enumerate(zip(data_t, data_p)):
+
+        t_bits = np.binary_repr(t_value, width=4)
+
+        # seleccionar instante temporal
+        for i, bit in enumerate(t_bits):
+            if bit == "0":
+                qc.x(t_qubits[i])
+
+        theta_t = w_t * timbre + b_t
+        theta_p = w_p * phase + b_p
+
+        qc.mcrz(theta_p, t_qubits, 0)
+        qc.mcry(theta_t, t_qubits, 0, None)
+        
+
+        # deshacer selección
+        for i, bit in enumerate(t_bits):
+            if bit == "0":
+                qc.x(t_qubits[i])
+    qc.h(0)
+
+    return qc
+
+
+
+def ry_rz_1_trainable2(data_t,data_p,w, b):
+
+    # 8 parametro entrenagarri t_0-t_7 -> 4 parametro, t_8-t_15 -> 4 parametro
+
+    n_qubits = 5
+    qc = QuantumCircuit(n_qubits)
+
+    w_t = w[0:2]
+    w_p = w[2:4]
+
+    b_t = b[0:2]
+    b_p = b[2:4]
+    
+    t_qubits =[1, 2, 3, 4]
+
+    for qubit in t_qubits:
+        qc.h(qubit)
+
+    qc.h(0)
+
+    for t_value, (timbre, phase) in enumerate(zip(data_t, data_p)):
+
+        block = t_value // 8
+
+        t_bits = np.binary_repr(t_value, width=4)
+
+        # seleccionar instante temporal
+        for i, bit in enumerate(t_bits):
+            if bit == "0":
+                qc.x(t_qubits[i])
+
+        theta_t = w_t[block] * timbre + b_t[block]
+        theta_p = w_p[block] * phase + b_p[block]
+
+        
+        qc.mcry(theta_t, t_qubits, 0, None)
+        qc.mcrz(theta_p, t_qubits, 0)
+        
+
+        # deshacer selección
+        for i, bit in enumerate(t_bits):
+            if bit == "0":
+                qc.x(t_qubits[i])
+    qc.h(0)
+
+    return qc
 
 def build_feature_map(feature_map, data,w=None,b=None, data_p=None):
     n_qubits = len(data)
@@ -213,5 +342,11 @@ def build_feature_map(feature_map, data,w=None,b=None, data_p=None):
         return qtse_p2_trainable(data_a=data,data_p=data_p,w=w,b=b)
     if(feature_map=="qtse_trainable"):
         return qtse_trainable(data_a=data,w=w,b=b)
+    if(feature_map=="ry_rz_1"):
+        return ry_rz_1(data_t=data, data_p=data_p)
+    if(feature_map=="ry_rz_1_trainable"):
+        return ry_rz_1_trainable(data_t=data, data_p=data_p,w=w,b=b)
+    if(feature_map=="ry_rz_1_trainable2"):
+        return ry_rz_1_trainable2(data_t=data, data_p=data_p,w=w,b=b)
     else:
         print("Ez dago kodeketarik izen horrekin")
